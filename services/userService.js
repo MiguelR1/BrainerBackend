@@ -5,4 +5,10 @@ async function dameTablero(usuario){
     return rows;
 }
 
-module.exports = {dameTablero};
+async function authLogin(usuario, contraseña){
+    const [usuarios] = await dbPool.execute("select * from USUARIOS WHERE usuario = ? AND contraseña = ?", [usuario, contraseña]);
+
+    return usuarios[0];
+}
+
+module.exports = {dameTablero, authLogin};

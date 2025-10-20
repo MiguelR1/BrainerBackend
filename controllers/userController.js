@@ -1,4 +1,7 @@
 const userService = require('../services/userService');
+const jwt = require('jsonwebtoken');
+
+const claveSecreta = 'CLAVESECRETA';
 
 async function dameTableros(req, res){
 
@@ -15,5 +18,35 @@ async function dameTableros(req, res){
     }
 }
 
+async function authLogin(req, res) {
+    
+    const {usuario, contraseña} = req.body;
 
-module.exports = {dameTableros};
+    try {
+        if (!usuario || !contraseña) {
+            res.status(400).json({
+                mensaje: "Faltan campos obligatorios"
+            })
+        }
+        const usuarios = await userService.authLogin(usuario, contraseña);
+
+        const token = jwt.sign(
+            {id: usuarios.id},
+            claveSecreta,
+            {expiresIn: '1m'}
+        )
+
+        res.status(200).json({
+            usuario: usuarios,
+            mensaje: "Se ha logeado de forma satisfactoria.",
+            token: token
+        })
+
+        res.status(200).json({usuarios});
+    } catch (error) {
+        res.status(500).json({error: "No se pudo hacer login"})
+    }
+}
+
+
+module.exports = {dameTableros, authLogin};
