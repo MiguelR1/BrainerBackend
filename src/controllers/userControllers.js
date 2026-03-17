@@ -25,7 +25,7 @@ async function register(req, res){
             })
         }else{
             const registerUser = await userService.register(Nombre, Cedula, Contraseña);
-    
+
             if (registerUser.affectedRows == 1) {
                 res.status(200).json({
                     "status": 0,
@@ -42,32 +42,52 @@ async function register(req, res){
 async function login(req, res) {
     try {
         const {Cedula, Contraseña} = req.body;
-        
-        if (!Cedula || !Contraseña) { res.status(400).json({error: 'Faltan datos obligatorios.'})};
-        
+
+        if (!Cedula || !Contraseña) {
+
+            res.status(400).json({error: 'Faltan datos obligatorios.'})
+            return;
+        };
+
         const userFind = await userService.getUserByCedula(Cedula);
-        
+
+        if (userFind.length === 0) {
+            res.status(401).json({
+                status: 1,
+                error: 'El correo electrónico o la contraseña son incorrectos. Por favor, inténtalo de nuevo.'
+            })
+            return;
+        }
+
         const passwordMatch = await bcrypt.compare(Contraseña, userFind[0].Contraseña);
 
-        if (!passwordMatch) {res.status(400).json({error: 'La cedula o la contraseña son incorrectas.'})}
+        if (!passwordMatch) {
+            res.status(401).json({
+                status: 1,
+                error: 'El correo electrónico o la contraseña son incorrectos. Por favor, inténtalo de nuevo.'
+            })
+            return;
+        }
 
         // const userFind = await userService.authLogin(Cedula, Contraseña, userFind[0].Contraseña);
-        
+
         const token = jwt.sign(
             // PAYLOAD: Solo datos NO sensibles
-            { id: userFind.Id, Nombre: userFind.Nombre }, // Asumiendo que 'user' tiene 'id', 'rol' y 'Cedula'
-            CLAVE_SECRETA, 
-            { expiresIn: '30m' }
+            { id: userFind[0].Id, Nombre: userFind[0].Nombre }, // Asumiendo que 'user' tiene 'id', 'rol' y 'Cedula'
+            CLAVE_SECRETA,
+            { expiresIn: '15m' }
         );
 
         // 3. Enviar el token y el mensaje de éxito en la respuesta
         res.status(200).json({
             // Puedes incluir datos básicos del usuario, pero el token es la clave.
-            id: userFind.Id,
-            usuario: userFind.Nombre, 
+            id: userFind[0].Id,
+            usuario: userFind[0].Nombre,
             mensaje: 'Ha hecho login de manera satisfactoria.',
             token: token
         });
+
+        return;
 
     } catch (error) {
         res.status(500).json({error: 'No se pudo hacer login.'})
@@ -76,7 +96,7 @@ async function login(req, res) {
 
 async function editUser(req, res) {
     try {
-        
+
         const {id, Cedula, Nombre, Contraseña} = req.body;
 
         if (!id || !Cedula || !Nombre || !Contraseña) {
@@ -160,21 +180,31 @@ async function getTableros(req, res){
 
 async function createTablero(req, res){
     try {
-        const {nombre, descripcion, imagen, idUser} = req.body;
-        
-        // res.status(200).json({nombre, descripcion, imagen, idUser})
-        
-        if (!nombre || !descripcion || !imagen || !idUser) {
+
+        const {nombre, descripcion, idUser} = req.body;
+
+        if (!nombre || !descripcion || !idUser) {
             return res.status(400).json({error: 'Faltan datos obligatorios.'});
         }
 
-        const user = await userService.getUserById(idUser);
+        if (!req.file) {
+            return res.status(400).json({ error: 'No se subió ninguna imagen' });
+        }
+
+        // Guardamos solo el nombre del archivo generado por Multer
+        const nombreArchivo = req.file.filename;
         
+        const imageUrl = `http://localhost:3000/uploads/${nombreArchivo}`;
+        
+        // console.log('reqqqqq',{nombre, descripcion, imageUrl, idUser});
+
+        const user = await userService.getUserById(idUser);
+
         if (!user) {
             return res.status(404).json({error: 'Usuario no encontrado'});
         }
-        
-        const newTablero = await userService.createTablero(nombre, descripcion, imagen, idUser);
+
+        const newTablero = await userService.createTablero(nombre, descripcion, imageUrl, idUser);
 
         res.status(200).json({Mensaje: 'Tablero creado con éxito', idTablero: newTablero.insertId});
     } catch (error) {
@@ -260,7 +290,7 @@ async function createTarea(req, res){
         }
 
         const tablero = await userService.getTableroById(idTablero);
-        
+
         if (!tablero) {
             return res.status(404).json({ error: 'Tablero no encontrado' });
         }else{
@@ -355,10 +385,28 @@ async function editTarea(req, res){
     }
 }
 
+async function getStatusByName(req, res){
+    try {
+        const {statusName} = req.query;
+        if (!statusName) {
+            return res.status(400).json({error: 'Faltan datos obligatorios.'});
+        }
+        const status = await userService.getStatusByName(statusName);
+        
+        if (!status) {
+            return res.status(404).json({error: 'Status no encontrado'});
+        }
+
+        res.status(200).json({Status: status});
+    } catch (error) {
+        res.status(500).json({error: 'No se pudo obtener el status.'});
+    }
+}
+
 module.exports = {
     // Funciones de usuario
-                    login, 
-                    register, 
+                    login,
+                    register,
                     editUser,
                     deleteUser,
                     getUsers,
@@ -374,5 +422,7 @@ module.exports = {
                     getTareasByTablero,
                     getTareaById,
                     deleteTarea,
-                    editTarea
+                    editTarea,
+    // Funciones de status
+                    getStatusByName
                 };

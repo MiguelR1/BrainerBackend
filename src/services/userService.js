@@ -89,7 +89,7 @@ async function createTarea(nombre, descripcion, image, status, idTablero){
 }
 
 async function getTareasByTablero(idTablero){
-    const [tareas] = await db.execute("SELECT * FROM tareadescrip WHERE idTablero = ?", [idTablero]);
+    const [tareas] = await db.execute("SELECT t.Id, t.Nombre, t.Descripcion, t.Image, t.idTablero, s.Nombre AS status FROM tareadescrip t JOIN status s ON t.idStatus = s.Id WHERE t.idTablero = ?", [idTablero]);
     return tareas;
 }
 
@@ -106,6 +106,18 @@ async function deleteTarea(idTarea){
 async function editTarea(idTarea, nombre, descripcion, image, status, idTablero){
     const [tarea] = await db.execute("UPDATE tareadescrip SET Nombre = ?, Descripcion = ?, Image = ?, idStatus = ?, idTablero = ? WHERE Id = ?", [nombre, descripcion, image, status, idTablero, idTarea]);
     return tarea;
+}
+
+// Funciones status
+
+async function getStatusByName(statusName){
+    const [status] = await db.execute("SELECT * FROM status WHERE Nombre = ?", [statusName]);
+    return status[0];
+}
+
+async function setDone(done, idStatus){
+    const [status] = await db.execute("UPDATE status SET Done = ? WHERE Id = ?", [done, idStatus]);
+    return status;
 }
 
 module.exports = {
@@ -129,5 +141,8 @@ module.exports = {
                     getTareaById,
                     getTareasByTablero,
                     deleteTarea,
-                    editTarea
+                    editTarea,
+    // Funciones de status
+                    getStatusByName,
+                    setDone
                 };
