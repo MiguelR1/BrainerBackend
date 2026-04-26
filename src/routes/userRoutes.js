@@ -15,18 +15,8 @@ router.delete('/deleteUser', authMiddleware, userController.deleteUser);
 router.get('/getUsers', authMiddleware, userController.getUsers);
 router.get('/getUserById', authMiddleware, userController.getUserById);
 
-
-
-
-
-
-
 //Rutas de tableros
 router.get('/getTableros', authMiddleware, userController.getTableros);
-
-
-// const upload = require('../../server'); // Importar la configuración de multer desde server.js
-// console.log('¿Qué es upload?:', upload);
 
 
 router.post('/createTablero', 
@@ -38,7 +28,11 @@ userController.createTablero);
 
 router.get('/getTableroById', authMiddleware, userController.getTableroById);
 router.delete('/deleteTablero', authMiddleware, userController.deleteTablero);
-router.put('/editTablero', authMiddleware, userController.editTablero);
+
+router.put('/editTablero', 
+    upload.single('imagen'),
+    authMiddleware, 
+    userController.editTablero);
 
 // Rutas de tareas
 router.post('/createTarea', authMiddleware, userController.createTarea);

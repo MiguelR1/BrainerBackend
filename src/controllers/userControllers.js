@@ -255,24 +255,40 @@ async function deleteTablero(req, res){
 
 async function editTablero(req, res){
     try {
-        const {idTablero, nombreTablero, descripcion, imagen, idUser} = req.body;
+        
+        //Revisar campos obligatorios
+        const {idTablero, nombreTablero, descripcion, idUser} = req.body;
 
-        if (!idTablero || !nombreTablero || !idUser || !descripcion || !imagen) {
+        if (!idTablero || !nombreTablero || !idUser || !descripcion) {
             return res.status(400).json({error: 'Faltan datos obligatorios.'});
         }
-
+        
+        //Revisar que el usuario existe
         const user = await userService.getUserById(idUser);
-        const tablero = await userService.getTableroById(idTablero);
-
+        
         if (!user) {
             return res.status(404).json({error: 'Usuario no encontrado'});
         }
 
+        //Revisar que el tablero existe
+        const tablero = await userService.getTableroById(idTablero);
+        
         if (!tablero) {
             return res.status(404).json({error: 'Tablero no encontrado'});
         }
 
-        await userService.editTablero(idTablero, nombreTablero, descripcion, imagen, idUser);
+        //Subida de imagen
+        let imagenUrl = '';
+
+        if (req.file) {
+            const nombreArchivo = req.file.filename;
+            imagenUrl = `http://localhost:3000/uploads/${nombreArchivo}`;
+        }else{
+            imagenUrl = tablero.imagen; // Mantener la imagen actual si no se sube una nueva
+        }
+
+        await userService.editTablero(idTablero, nombreTablero, descripcion, imagenUrl, idUser);
+        
         res.status(200).json({Mensaje: 'Tablero editado con éxito', idTablero: idTablero});
     } catch (error) {
         res.status(500).json({error: 'No se pudo editar el tablero'});

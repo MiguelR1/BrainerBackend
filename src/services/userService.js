@@ -20,7 +20,7 @@ async function verifyPassword(password, hash) {
 }
 
 async function authLogin(Cedula, Contraseña){
-    const [user] = await db.execute('SELECT Id, Nombre from usuario WHERE Cedula = ? AND Contraseña = ?', [Cedula, password]);
+    const [user] = await db.execute('SELECT Id, Nombre from usuario WHERE Cedula = ? AND Contraseña = ?', [Cedula, Contraseña]);
     return user[0];
 }
 
